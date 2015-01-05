@@ -8,27 +8,21 @@ import Data.IORef
 import Reactive.Banana
 import Reactive.Banana.Frameworks
 
-data Splits = Splits String ([Segment])
+data RunState = RunState String ([Segment])
 data Segment = Segment String Times
-data Times = Times ([Int])
+type Times = [Int]
 
-data DSplits = Rename String
-             | AddSegment Segment
 
-applyDSplits :: DSplits -> Splits -> Splits
-applyDSplits (Rename name) (Splits _ ss) = Splits name ss
-applyDSplits (AddSegment segment) (Splits name ss) = Splits name (segment : ss)
-  
-
-instance Show Splits where
-  show (Splits name ss) = foldr (\s a -> a ++ show s ++ "\n") (name ++ "\n") ss
+instance Show RunState where
+  show (RunState name ss) = foldr (\s a -> a ++ show s ++ "\n") (name ++ "\n") ss
 
 instance Show Segment where
   show (Segment name times) = name
 
 
-emptySplits :: Splits
-emptySplits = Splits "" []
+emptyRunState :: RunState
+emptyRunState = RunState "" []
+
 
 main :: IO ()
 main = do
@@ -49,7 +43,7 @@ displayHelpMessage = mapM_ putStrLn $
   []
 
 -- Read commands and fire corresponding events
-eventLoop :: (EventSource DSplits) -> EventNetwork -> IO ()
+eventLoop :: (EventSource (RunState -> RunState)) -> EventNetwork -> IO ()
 eventLoop (es) network = loop
   where
     loop = do
@@ -61,12 +55,12 @@ eventLoop (es) network = loop
           putStr "name: "
           hFlush stdout
           name <- getLine
-          fire es (Rename name)
+          fire es (\(RunState _ ss) -> RunState name ss)
         "addsegment" -> do
           putStr "name: "
           hFlush stdout
           name <- getLine
-          fire es (AddSegment (Segment name (Times [])))
+          fire es (\(RunState n ss) -> RunState n ((Segment name []):ss))
         "actuate" -> actuate network
         "quit" -> return ()
         _ -> putStrLn $ s ++ " - unknown command"
@@ -89,10 +83,10 @@ fire = snd
 Program logic
 ------------------------------------------------------------------------------}
 -- Set up the program logic in terms of events and behaviors.
-setupNetwork :: (EventSource DSplits) -> IO EventNetwork
+setupNetwork :: (EventSource (RunState -> RunState)) -> IO EventNetwork
 setupNetwork (es) = compile $ do
-  eEvents <- fromAddHandler (addHandler es)
+  eRunState <- fromAddHandler (addHandler es)
 
-  let splits = accumE emptySplits (fmap (\d -> applyDSplits d) eEvents)
+  let splits = accumE emptyRunState eRunState
 
   reactimate $ fmap print splits
