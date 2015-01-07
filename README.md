@@ -1,16 +1,16 @@
 #Reactive Banana Split
 
+Behold, the code of a Haskell noob.
+
 ##To compile
 
-Make sure you've got the Haskell platform and wx widgets installed.
+Get the Haskell platform and sdl.
 
-Clone the repository.  From the root directory of the repository, run the commands
+From the root directory of this repository, run the commands
 
 ```
 cabal sandbox init
-cabal install reactive-banana reactive-banana-wx
+cabal install reactive-banana reactive-banana-sdl
 ```
 
 Then you may run `make` at your discretion.
-
-I make no guarantees that it'll be straightforward for you to get wx widgets and these two cabal packages installed.  It wasn't really straightforward for me :/
